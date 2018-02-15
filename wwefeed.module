@@ -1,0 +1,47 @@
+<?php
+// wwefeed.module
+/** Gets a list of entities by type, bundle, and count.
+*
+* @param string $entity_type
+* @param string $bundle
+* @param int $count
+* @return object
+*/
+function  wwefeed_get($count) {
+  global $base_url;
+  //print $base_url;exit;
+  return db_query_range('SELECT n.nid, n.title, FROM_UNIXTIME(n.created) AS created, FROM_UNIXTIME(n.changed) AS updated, n.status, u.name AS user, CONCAT(\'' . $base_url . '\',\'/\', ua.alias) AS alias
+    FROM {node} n
+    INNER JOIN {users} u ON u.uid = n.uid
+    INNER JOIN {url_alias} ua ON ua.source = CONCAT(\'node/\', n.nid)
+    ORDER BY created DESC', 0, $count)
+           ->fetchAll();
+}
+
+/**
+* Implementation of hook_services_resources().
+*/
+function wwefeed_services_resources() {
+  return array(
+    'articles' => array(
+      'retrieve' => array(
+        'help' => 'Retrieves WWE content',
+        'file' => array('file' => 'inc', 'module' => 'wwefeed'),
+        'callback' => '_wwefeed_get',
+        'access callback' => 'user_access',
+        'access arguments' => array('access content'),
+        'access arguments append' => FALSE,        
+        'args' => array(
+          array(
+            'name' => 'count',
+            'type' => 'int',
+            'description' => 'The number of entities to retrieve',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+?>
